@@ -1,0 +1,1022 @@
+{
+  "name": "Job Researcher",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/role",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "e725ba83-5982-4361-accc-f63fda6ff742"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "role"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8ef30e7b-f2c1-4ef1-9175-8f8b3cf730a4",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/company",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "company"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -320,
+        192
+      ],
+      "id": "e925c7cf-966b-4bac-9006-f190a73d124b",
+      "name": "Route"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-oss-20b\",\n  \"temperature\": 0,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a role validation system. Your job is to determine whether the user's input is a real, recognizable job role. Return ONLY valid JSON with exactly these two fields: valid_role (boolean) and role (string). If the input is a valid job role, set valid_role to true and role to the normalized role name. If it is not a real job role, set valid_role to false and role to the best interpretation only when reasonably clear; otherwise use an empty string. Do not include markdown, explanations, code fences, or any other text.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.message.text }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -144,
+        -160
+      ],
+      "id": "089f587d-7ffa-4a88-93ff-f66b7ccd69bc",
+      "name": "Validate Role",
+      "credentials": {
+        "groqApi": {
+          "id": "H9x3xQy6H0LLkQBm",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        832,
+        -80
+      ],
+      "id": "d5461bdf-147a-44e3-aba8-3f7c513d6c5e",
+      "name": "FLASH-3.5-LITE",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "klL9E4HFlH4Dwvt6",
+          "name": "gemini-excel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        976,
+        -80
+      ],
+      "id": "c103c760-21fd-40d5-9f66-0960eaa149e1",
+      "name": "GPT-OSS-120B1",
+      "credentials": {
+        "groqApi": {
+          "id": "H9x3xQy6H0LLkQBm",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"role\": { \"type\": \"string\" },\n    \"companies\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"company\": { \"type\": \"string\" },\n          \"salary\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"currency\": { \"type\": \"string\" },\n              \"period\": { \"type\": \"string\" },\n              \"fresher\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"min\": { \"type\": \"number\" },\n                  \"max\": { \"type\": \"number\" },\n                  \"type\": { \"type\": \"string\", \"enum\": [\"estimate\", \"reported\"] }\n                },\n                \"required\": [\"min\", \"max\", \"type\"]\n              },\n              \"mid\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"min\": { \"type\": \"number\" },\n                  \"max\": { \"type\": \"number\" },\n                  \"type\": { \"type\": \"string\", \"enum\": [\"estimate\", \"reported\"] }\n                },\n                \"required\": [\"min\", \"max\", \"type\"]\n              },\n              \"senior\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"min\": { \"type\": \"number\" },\n                  \"max\": { \"type\": \"number\" },\n                  \"type\": { \"type\": \"string\", \"enum\": [\"estimate\", \"reported\"] }\n                },\n                \"required\": [\"min\", \"max\", \"type\"]\n              }\n            },\n            \"required\": [\"currency\", \"period\", \"fresher\", \"mid\", \"senior\"]\n          },\n          \"skills\": {\n            \"type\": \"array\",\n            \"items\": { \"type\": \"string\" },\n            \"minItems\": 6\n          }\n        },\n        \"required\": [\"company\", \"salary\", \"skills\"]\n      },\n      \"minItems\": 5,\n      \"maxItems\": 5\n    },\n    \"common_skills\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"technical\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"minItems\": 3 },\n        \"non_technical\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"minItems\": 3 }\n      },\n      \"required\": [\"technical\", \"non_technical\"]\n    }\n  },\n  \"required\": [\"role\", \"companies\", \"common_skills\"]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1184,
+        -96
+      ],
+      "id": "30f6d8e4-8fb3-454f-aeae-e93d75c14e24",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "let data = $json;\n\nif (typeof data.output === 'string') {\n  try {\n    data = JSON.parse(data.output);\n  } catch (error) {\n    throw new Error(`Could not parse agent output: ${data.output}`);\n  }\n} else if (data.output && typeof data.output === 'object') {\n  data = data.output;\n}\n\nif (!data.role || typeof data.role !== 'string') {\n  throw new Error(`Invalid agent output. Missing or invalid \"role\": ${JSON.stringify(data)}`);\n}\n\nif (!Array.isArray(data.companies) || data.companies.length === 0) {\n  throw new Error(\n    `Invalid agent output. Expected non-empty \"companies\" array but received: ${JSON.stringify(data)}`\n  );\n}\n\nfunction formatNumber(n) {\n  if (typeof n !== 'number') return 'N/A';\n  return n.toLocaleString('en-IN');\n}\n\nfunction formatPeriod(period) {\n  const periodMap = { yearly: 'year', annual: 'year', monthly: 'month', hourly: 'hour' };\n  if (!period) return 'year';\n  let p = period.toLowerCase().trim();\n  p = p.replace(/^per\\s+/, ''); // strip a leading \"per \" if the agent included it\n  return periodMap[p] || p;\n}\n\nfunction salaryRow(level, tier) {\n  if (!tier) return `| ${level} | N/A | N/A | N/A |`;\n  return `| ${level} | ${formatNumber(tier.min)} | ${formatNumber(tier.max)} | ${tier.type || 'N/A'} |`;\n}\n\nlet md = `# ${data.role} — Job Market Report\\n\\n`;\nmd += `_Generated on ${new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}_\\n\\n`;\nmd += `## Companies\\n\\n`;\n\nfor (const company of data.companies) {\n  md += `### ${company.company || 'Unknown Company'}\\n\\n`;\n\n  if (company.salary) {\n    const currency = company.salary.currency || 'INR';\n    const period = formatPeriod(company.salary.period);\n\n    md += `**Salary (${currency} per ${period}):**\\n\\n`;\n    md += `| Level | Min | Max | Type |\\n`;\n    md += `|---|---|---|---|\\n`;\n    md += `${salaryRow('Fresher', company.salary.fresher)}\\n`;\n    md += `${salaryRow('Mid', company.salary.mid)}\\n`;\n    md += `${salaryRow('Senior', company.salary.senior)}\\n\\n`;\n  } else {\n    md += `**Salary:** Not available\\n\\n`;\n  }\n\n  if (Array.isArray(company.skills) && company.skills.length > 0) {\n    md += `**Skills:**\\n\\n`;\n    for (const skill of company.skills) {\n      md += `- ${skill}\\n`;\n    }\n    md += `\\n`;\n  }\n\n  md += `---\\n\\n`;\n}\n\nif (data.common_skills) {\n  md += `## Common Skills Across Companies\\n\\n`;\n\n  if (Array.isArray(data.common_skills.technical) && data.common_skills.technical.length > 0) {\n    md += `### Technical Skills\\n\\n`;\n    for (const skill of data.common_skills.technical) {\n      md += `- ${skill}\\n`;\n    }\n    md += `\\n`;\n  }\n\n  if (Array.isArray(data.common_skills.non_technical) && data.common_skills.non_technical.length > 0) {\n    md += `### Non-Technical Skills\\n\\n`;\n    for (const skill of data.common_skills.non_technical) {\n      md += `- ${skill}\\n`;\n    }\n    md += `\\n`;\n  }\n}\n\nconst fileName = `${(data.role || 'job_market_report').replace(/[^a-z0-9]+/gi, '_').toLowerCase()}_report.md`;\n\nconst binaryData = await this.helpers.prepareBinaryData(\n  Buffer.from(md, 'utf8'),\n  fileName,\n  'text/markdown'\n);\n\nreturn [\n  {\n    json: { role: data.role },\n    binary: { data: binaryData }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        -80
+      ],
+      "id": "d42022df-58a0-48c5-aee8-d824fe478823",
+      "name": "Format and Convert To Binary"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-oss-20b\",\n  \"temperature\": 0,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a company validation system. Your job is to determine whether the user's input is a real, recognizable company or organization. Return ONLY valid JSON with exactly these two fields: valid_company (boolean) and company (string). If the input is a valid company, set valid_company to true and company to the normalized official/common company name. If it is not a real company, set valid_company to false and company to the best interpretation only when reasonably clear; otherwise use an empty string. Do not include markdown, explanations, code fences, or any other text.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.message.text }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -128,
+        208
+      ],
+      "id": "fa35ad01-bb3c-4149-8d59-93af310347a0",
+      "name": "Validate Company",
+      "credentials": {
+        "groqApi": {
+          "id": "H9x3xQy6H0LLkQBm",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        864,
+        384
+      ],
+      "id": "32204057-b52b-423a-a663-b70528e48c9a",
+      "name": "GPT-OSS-120B2",
+      "credentials": {
+        "groqApi": {
+          "id": "H9x3xQy6H0LLkQBm",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        16
+      ],
+      "id": "1903a5db-dcdb-4b87-b07e-a1b80c0d1c38",
+      "name": "GPT-OSS-20B",
+      "credentials": {
+        "groqApi": {
+          "id": "H9x3xQy6H0LLkQBm",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        384
+      ],
+      "id": "39453dfe-bf59-4699-b950-d8528a30813d",
+      "name": "FLASH-3.5-LITE1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "klL9E4HFlH4Dwvt6",
+          "name": "gemini-excel"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"company\": { \"type\": \"string\" },\n    \"roles\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"role\": { \"type\": \"string\" },\n          \"salary\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"currency\": { \"type\": \"string\" },\n              \"period\": { \"type\": \"string\" },\n              \"fresher\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"min\": { \"type\": \"number\" },\n                  \"max\": { \"type\": \"number\" },\n                  \"type\": { \"type\": \"string\", \"enum\": [\"estimate\", \"reported\"] }\n                },\n                \"required\": [\"min\", \"max\", \"type\"]\n              },\n              \"mid\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"min\": { \"type\": \"number\" },\n                  \"max\": { \"type\": \"number\" },\n                  \"type\": { \"type\": \"string\", \"enum\": [\"estimate\", \"reported\"] }\n                },\n                \"required\": [\"min\", \"max\", \"type\"]\n              },\n              \"senior\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"min\": { \"type\": \"number\" },\n                  \"max\": { \"type\": \"number\" },\n                  \"type\": { \"type\": \"string\", \"enum\": [\"estimate\", \"reported\"] }\n                },\n                \"required\": [\"min\", \"max\", \"type\"]\n              }\n            },\n            \"required\": [\"currency\", \"period\", \"fresher\", \"mid\", \"senior\"]\n          },\n          \"skills\": {\n            \"type\": \"array\",\n            \"items\": { \"type\": \"string\" },\n            \"minItems\": 6\n          }\n        },\n        \"required\": [\"role\", \"salary\", \"skills\"]\n      },\n      \"minItems\": 5,\n      \"maxItems\": 5\n    },\n    \"common_skills\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"technical\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"minItems\": 3 },\n        \"non_technical\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"minItems\": 3 }\n      },\n      \"required\": [\"technical\", \"non_technical\"]\n    }\n  },\n  \"required\": [\"role\", \"companies\", \"common_skills\"]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1088,
+        368
+      ],
+      "id": "f5d4ee69-abcd-49fd-b997-e9e860a8123d",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        480
+      ],
+      "id": "847055bc-07e8-4eb5-9ba3-1e57195ae4a3",
+      "name": "GPT-OSS-20B1",
+      "credentials": {
+        "groqApi": {
+          "id": "H9x3xQy6H0LLkQBm",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let data = $json;\n\nif (typeof data.output === 'string') {\n  try {\n    data = JSON.parse(data.output);\n  } catch (error) {\n    throw new Error(`Could not parse agent output: ${data.output}`);\n  }\n} else if (data.output && typeof data.output === 'object') {\n  data = data.output;\n}\n\nif (!data.company || typeof data.company !== 'string') {\n  throw new Error(`Invalid agent output. Missing or invalid \"company\": ${JSON.stringify(data)}`);\n}\n\nif (!Array.isArray(data.roles) || data.roles.length === 0) {\n  throw new Error(\n    `Invalid agent output. Expected non-empty \"roles\" array but received: ${JSON.stringify(data)}`\n  );\n}\n\nfunction formatNumber(n) {\n  if (typeof n !== 'number') return 'N/A';\n  return n.toLocaleString('en-IN');\n}\n\nfunction formatPeriod(period) {\n  const periodMap = { yearly: 'year', annual: 'year', monthly: 'month', hourly: 'hour' };\n  if (!period) return 'year';\n  let p = period.toLowerCase().trim();\n  p = p.replace(/^per\\s+/, ''); // strip a leading \"per \" if the agent included it\n  return periodMap[p] || p;\n}\n\nfunction salaryRow(level, tier) {\n  if (!tier) return `| ${level} | N/A | N/A | N/A |`;\n  return `| ${level} | ${formatNumber(tier.min)} | ${formatNumber(tier.max)} | ${tier.type || 'N/A'} |`;\n}\n\nlet md = `# ${data.company} — Job Market Report\\n\\n`;\nmd += `_Generated on ${new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}_\\n\\n`;\nmd += `## Roles\\n\\n`;\n\nfor (const role of data.roles) {\n  md += `### ${role.role || 'Unknown Role'}\\n\\n`;\n\n  if (role.salary) {\n    const currency = role.salary.currency || 'INR';\n    const period = formatPeriod(role.salary.period);\n\n    md += `**Salary (${currency} per ${period}):**\\n\\n`;\n    md += `| Level | Min | Max | Type |\\n`;\n    md += `|---|---|---|---|\\n`;\n    md += `${salaryRow('Fresher', role.salary.fresher)}\\n`;\n    md += `${salaryRow('Mid', role.salary.mid)}\\n`;\n    md += `${salaryRow('Senior', role.salary.senior)}\\n\\n`;\n  } else {\n    md += `**Salary:** Not available\\n\\n`;\n  }\n\n  if (Array.isArray(role.skills) && role.skills.length > 0) {\n    md += `**Skills:**\\n\\n`;\n    for (const skill of role.skills) {\n      md += `- ${skill}\\n`;\n    }\n    md += `\\n`;\n  }\n\n  md += `---\\n\\n`;\n}\n\nif (data.common_skills) {\n  md += `## Common Skills Across Roles\\n\\n`;\n\n  if (Array.isArray(data.common_skills.technical) && data.common_skills.technical.length > 0) {\n    md += `### Technical Skills\\n\\n`;\n    for (const skill of data.common_skills.technical) {\n      md += `- ${skill}\\n`;\n    }\n    md += `\\n`;\n  }\n\n  if (Array.isArray(data.common_skills.non_technical) && data.common_skills.non_technical.length > 0) {\n    md += `### Non-Technical Skills\\n\\n`;\n    for (const skill of data.common_skills.non_technical) {\n      md += `- ${skill}\\n`;\n    }\n    md += `\\n`;\n  }\n}\n\nconst fileName = `${(data.company || 'company_job_report').replace(/[^a-z0-9]+/gi, '_').toLowerCase()}_report.md`;\n\nconst binaryData = await this.helpers.prepareBinaryData(\n  Buffer.from(md, 'utf8'),\n  fileName,\n  'text/markdown'\n);\n\nreturn [\n  {\n    json: { company: data.company },\n    binary: { data: binaryData }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        112
+      ],
+      "id": "e9b54e4d-0402-4ab8-bba1-f9f75ebc7da4",
+      "name": "Format and Convert to Binary"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Search in TavilSearch the web for current salary and skill information for a specific job role and company in India.\n\nUse this tool to:\n- Find company-specific salary ranges for the given role in India.\n- Find current or recent job postings to identify required technical and non-technical skills.\n- Verify whether a company is currently hiring for this role in India.\n- Fill in missing companies if the initial search results did not surface 5 distinct companies.\n\nPrefer recent and reliable sources such as official company career pages, LinkedIn or Naukri job listings, Glassdoor, AmbitionBox, Levels.fyi, and other credible salary-reporting or job-listing sites. Always scope queries to India specifically. Run one focused query per company/role/data-type combination rather than combining everything into a single broad query.",
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        -80
+      ],
+      "id": "b09f3c29-31ae-4cca-bcf9-5be550d1622f",
+      "name": "Tavily1",
+      "credentials": {
+        "tavilyApi": {
+          "id": "kL71kDoduid8cOjN",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Search the web for current job openings, salary information, and required skills at a specific company in India.\n\nUse this tool to:\n- Find job roles currently open or commonly hired for at the given company in India.\n- Find role-specific salary ranges at that company in India.\n- Find current or recent job postings to identify required technical and non-technical skills for each role.\n- Verify whether the company is actively hiring for a given role in India.\n\nPrefer recent and reliable sources such as the company's official careers page, LinkedIn or Naukri job listings, Glassdoor, AmbitionBox, Levels.fyi, and other credible salary-reporting or job-listing sites. Always scope queries to India specifically. Run one focused query per role/data-type combination rather than combining everything into a single broad query.",
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        992,
+        416
+      ],
+      "id": "c6f9170b-4e07-45fb-a9cf-2af17559a612",
+      "name": "Tavily2",
+      "credentials": {
+        "tavilyApi": {
+          "id": "kL71kDoduid8cOjN",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.combinedContent }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a job market research agent focused on the Indian job market.\n\nYour task is to research the given job role and identify 5 distinct companies in India currently hiring for that role, along with salary information and commonly required skills.\n\nYou have access to a web search tool. Follow these steps in order:\n\n1. From the provided search content, identify candidate companies hiring for this role in India. Do not list the same company twice under different names (e.g. \"Google\" and \"Google India\" count as one).\n2. You must return at least 5 distinct companies and Max up to 7 Companies . If the provided search content does not surface 5 distinct companies, use the web search tool again with different or more specific queries until you have 5. \n3. For each of the 5 companies, research salary information relevant to India using the web search tool. Prefer official company career pages, reputable job portals (Naukri, LinkedIn, Glassdoor, AmbitionBox, Levels.fyi), and credible salary-reporting sites.\n4. For each of the 5 companies, research the technical and non-technical skills most commonly required for this role at that company.\n5. Once all 5 companies have salary and skills data, identify the skills that are common across most or all of the 5 companies and summarize them separately as common_skills.\n\nRules:\n- Do not invent salary figures or skills that are not supported by search results.\n- When exact company-specific salary data is unavailable, provide a reasonable India-market estimate only when supported by related research, and set salary.type to \"estimate\" in that case. Set salary.type to \"reported\" when the figure comes directly from a source.\n- Keep each company's data separate and complete — do not merge two companies into one entry.\n- Prefer recent (2025-2026) sources over older data.\n- Return ONLY the structured JSON requested by the output parser. Do not include markdown, explanations, commentary, or any text outside the JSON structure.\nSalary research by experience level:\n\n- For each company/role, research and return separate salary ranges for three experience levels: fresher (0-2 years), mid-level (3-6 years), and senior (7+ years).\n- Each level must have its own realistic min and max in INR, reflecting how compensation actually scales with experience for this specific role/company — do not just apply a flat multiplier to a single base figure.\n- Set each level's type independently to \"reported\" if you found level-specific data in search results, or \"estimate\" if you are inferring it from general market patterns for that experience band.\n- If search results only mention a single blended salary figure with no experience breakdown, search again with a more targeted query (e.g. \"<role> <company> fresher salary India\" or \"<role> <company> senior salary India\") before falling back to a reasoned estimate.\n- Ranges across the three levels should not overlap or invert (senior minimum should not be lower than mid maximum, etc.) — sanity-check your numbers before returning them.\nSkill research depth:\n\n- For each role, return 10 to 15 skills, not fewer.\n- Go beyond programming languages and generic tool names. Include specific frameworks, libraries, platforms, and methodologies actually mentioned in job postings or company descriptions (e.g. not just \"Python\" but \"Python (Pandas, FastAPI)\"; not just \"Cloud Infrastructure\" but \"AWS (EC2, Lambda, S3)\" or \"Azure DevOps\").\n- Include at least 1-2 role-specific technical skills that would NOT apply to a generic software role — the kind of skill that signals genuine domain depth for this exact role/company (e.g. for an ML role: \"model quantization\", \"vector databases\", \"distributed training\"; for an automation role: \"webhook orchestration\", \"error-handling patterns in workflow automation\", \"rate-limit handling for third-party APIs\").\n- Include 1-2 non-technical or process skills that are specific to how the role is actually practiced (e.g. \"cross-team API contract negotiation\" rather than just \"communication\").\n- Avoid vague catch-all terms like \"Software engineering\", \"Problem solving skills\", or \"Machine Learning models\" unless paired with something concrete.\n- If search results don't give enough depth for a role, search again with a more specific query (e.g. \"<role> <company> tech stack\" or \"<role> <company> job description skills\") before falling back to a general skill."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        896,
+        -272
+      ],
+      "id": "ad20b0b7-7ca9-4584-a035-a0ea2928b253",
+      "name": "Search For Salaries,Skills",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Trigger').first().json.message.chat.id }}",
+        "text": "Invalid role.  Please enter a valid job role after /role.  Example: /role Machine Learning Engineer",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        -304
+      ],
+      "id": "9314b293-b32c-4ba0-9f73-18b09e963840",
+      "name": "Send Role Error Message",
+      "webhookId": "eca462a5-5fd8-44da-9359-11186aadba12",
+      "credentials": {
+        "telegramApi": {
+          "id": "xwzAZ03C5uLcQtZw",
+          "name": "tool_space"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "73cbf99f-1cb9-4149-a250-2a56829c3bc1",
+              "leftValue": "={{ $json.valid_role }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        240,
+        -160
+      ],
+      "id": "d8b50c39-df94-42cf-b4ef-984fb1fbd92d",
+      "name": "Route Role Error"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Trigger').first().json.message.chat.id }}",
+        "text": "Invalid company.  Please enter a valid company name after /company.  Example: /company Microsoft",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        304
+      ],
+      "id": "ca9e1425-f44a-47cb-9d98-f88e71c83d95",
+      "name": "Send Company Error Message",
+      "webhookId": "eca462a5-5fd8-44da-9359-11186aadba12",
+      "credentials": {
+        "telegramApi": {
+          "id": "xwzAZ03C5uLcQtZw",
+          "name": "tool_space"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.choices?.[0]?.message?.content;\n\nif (!raw) {\n  throw new Error(\"LLM returned no content\");\n}\n\nlet result;\n\ntry {\n  result = JSON.parse(raw);\n} catch (error) {\n  // Try extracting JSON if the model accidentally added extra text\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n\n  if (!match) {\n    throw new Error(`Could not parse LLM response: ${raw}`);\n  }\n\n  result = JSON.parse(match[0]);\n}\n\nreturn [\n  {\n    json: result\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        -160
+      ],
+      "id": "bf97d190-8d24-414b-b535-9386806bf472",
+      "name": "Extract Valid Role Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.choices?.[0]?.message?.content;\n\nif (!raw) {\n  throw new Error(\"LLM returned no content\");\n}\n\nlet result;\n\ntry {\n  result = JSON.parse(raw);\n} catch (error) {\n  // Try extracting JSON if the model accidentally added extra text\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n\n  if (!match) {\n    throw new Error(`Could not parse LLM response: ${raw}`);\n  }\n\n  result = JSON.parse(match[0]);\n}\n\nreturn [\n  {\n    json: result\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        208
+      ],
+      "id": "6858a0ce-b923-415a-b102-bde43a16f430",
+      "name": "Extract Valid Company Output"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Trigger').first().json.message.chat.id}}",
+        "text": "Invalid command.  Please use one of these commands:  \n/role <job role> \n/company <company name>  \nExamples: /role Data Scientist /company Google",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        432
+      ],
+      "id": "e259bafc-d4c8-4718-9303-af3dd961abf3",
+      "name": "Send Help Message",
+      "webhookId": "396031c7-21fc-43f0-aa17-e958ffba7675",
+      "credentials": {
+        "telegramApi": {
+          "id": "xwzAZ03C5uLcQtZw",
+          "name": "tool_space"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "==Find companies actively hiring {{ $json.role }} in India in 2026, including salary ranges and required skills. Include large tech companies, product-based companies, and mid-size firms.",
+        "options": {
+          "max_results": 7
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        464,
+        -96
+      ],
+      "id": "3e9c3e57-d836-417d-92fb-cdb41299b3f6",
+      "name": "Search",
+      "credentials": {
+        "tavilyApi": {
+          "id": "kL71kDoduid8cOjN",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $json.results || [];\nconst combined = results.map(r => r.content).join('\\n\\n---\\n\\n');\n\nreturn [{ json: { combinedContent: combined } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -96
+      ],
+      "id": "21d010f8-d5be-41ab-aeac-a3261180b882",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "428da706-368a-42d6-8fe6-50cb3dc46033",
+              "leftValue": "={{ $json.valid_company }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        352,
+        208
+      ],
+      "id": "8157e1d7-6c65-41b9-b7ea-2af90390a1ee",
+      "name": "Route Company Error"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.company }}",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a job market research agent focused on the Indian job market.\n\nYour task is to research the given company and identify 5 distinct job roles that this company currently hires for in India, along with salary information and commonly required skills for each role.\n\nYou have access to a web search tool. Follow these steps in order:\n\n1. From the provided search content, identify candidate job roles that this company hires for in India. Do not list the same role twice under different titles (e.g. \"Software Engineer\" and \"SDE\" count as one — pick the more commonly used title).\n2. You must return exactly 5 distinct job roles. If the provided search content does not surface 5 distinct roles, use the web search tool again with different or more specific queries until you have 5.\n3. For each of the 5 roles, research salary information relevant to this company in India using the web search tool. Prefer official company career pages, reputable job portals (Naukri, LinkedIn, Glassdoor, AmbitionBox, Levels.fyi), and credible salary-reporting sites.\n4. For each of the 5 roles, research the technical and non-technical skills most commonly required for that role at this company.\n5. Once all 5 roles have salary and skills data, identify the skills that are common across most or all of the 5 roles and summarize them separately as common_skills.\n\nRules:\n- Do not invent salary figures or skills that are not supported by search results.\n- When exact role-specific salary data is unavailable, provide a reasonable India-market estimate only when supported by related research, and set salary.type to \"estimate\" in that case. Set salary.type to \"reported\" when the figure comes directly from a source.\n- Keep each role's data separate and complete — do not merge two roles into one entry.\n- Prefer recent (2025-2026) sources over older data.\n- Return ONLY the structured JSON requested by the output parser. Do not include markdown, explanations, commentary, or any text outside the JSON structure.\n\nSalary research by experience level:\n\n- For each company/role, research and return separate salary ranges for three experience levels: fresher (0-2 years), mid-level (3-6 years), and senior (7+ years).\n- Each level must have its own realistic min and max in INR, reflecting how compensation actually scales with experience for this specific role/company — do not just apply a flat multiplier to a single base figure.\n- Set each level's type independently to \"reported\" if you found level-specific data in search results, or \"estimate\" if you are inferring it from general market patterns for that experience band.\n- If search results only mention a single blended salary figure with no experience breakdown, search again with a more targeted query (e.g. \"<role> <company> fresher salary India\" or \"<role> <company> senior salary India\") before falling back to a reasoned estimate.\n- Ranges across the three levels should not overlap or invert (senior minimum should not be lower than mid maximum, etc.) — sanity-check your numbers before returning them.\n\nSkill research depth:\n\n- For each role, return 10 to 15 skills, not fewer.\n- Go beyond programming languages and generic tool names. Include specific frameworks, libraries, platforms, and methodologies actually mentioned in job postings or company descriptions (e.g. not just \"Python\" but \"Python (Pandas, FastAPI)\"; not just \"Cloud Infrastructure\" but \"AWS (EC2, Lambda, S3)\" or \"Azure DevOps\").\n- Include at least 1-2 role-specific technical skills that would NOT apply to a generic software role — the kind of skill that signals genuine domain depth for this exact role/company (e.g. for an ML role: \"model quantization\", \"vector databases\", \"distributed training\"; for an automation role: \"webhook orchestration\", \"error-handling patterns in workflow automation\", \"rate-limit handling for third-party APIs\").\n- Include 1-2 non-technical or process skills that are specific to how the role is actually practiced (e.g. \"cross-team API contract negotiation\" rather than just \"communication\").\n- Avoid vague catch-all terms like \"Software engineering\", \"Problem solving skills\", or \"Machine Learning models\" unless paired with something concrete.\n- If search results don't give enough depth for a role, search again with a more specific query (e.g. \"<role> <company> tech stack\" or \"<role> <company> job description skills\") before falling back to a general skill."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        800,
+        192
+      ],
+      "id": "361f8dac-591e-424a-b084-1326b5a93ffc",
+      "name": "Search For Job Role,Salaries,Skills",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -464,
+        208
+      ],
+      "id": "21ae7140-b01d-4cf5-a235-2465ae07a7e4",
+      "name": "Trigger",
+      "webhookId": "03d4df3a-e88c-4405-bda9-ec2274337de8",
+      "credentials": {
+        "telegramApi": {
+          "id": "xwzAZ03C5uLcQtZw",
+          "name": "tool_space"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ $('Trigger').first().json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1600,
+        16
+      ],
+      "id": "40eece94-0ef8-4313-a27c-27ca081223c8",
+      "name": "Send a document",
+      "webhookId": "724dfcd0-48d1-41a1-bd69-5ab50c937efc",
+      "credentials": {
+        "telegramApi": {
+          "id": "xwzAZ03C5uLcQtZw",
+          "name": "tool_space"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Trigger').first().json.message.chat.id }}",
+        "text": "=I couldn't complete the job-market research for this role right now.\n\nThe web research did not return enough reliable information to generate the report.\n\nPlease try again in a moment.\n",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1488,
+        -304
+      ],
+      "id": "39405dc7-9a61-4ff1-97aa-ab36197e5993",
+      "name": "Send Agent Error Message",
+      "webhookId": "1ebcc688-7e17-4c7b-b6d2-790779368fb1",
+      "credentials": {
+        "telegramApi": {
+          "id": "xwzAZ03C5uLcQtZw",
+          "name": "tool_space"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Trigger').first().json.message.chat.id }}",
+        "text": "=I couldn't complete the job-market research for this company right now.\n\nThe web research did not return enough reliable information to generate the report.\n\nPlease try again in a moment.\n",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1456,
+        272
+      ],
+      "id": "97ceff86-6ece-419f-8fa8-a161c9ceb676",
+      "name": "Send Agent Error Message1",
+      "webhookId": "1ebcc688-7e17-4c7b-b6d2-790779368fb1",
+      "credentials": {
+        "telegramApi": {
+          "id": "xwzAZ03C5uLcQtZw",
+          "name": "tool_space"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# AI JOB MARKET RESEARCHER\n\nA Telegram-based AI research assistant that helps users explore the Indian job market through simple `/role` and `/company` commands.\n\nFor a job role, the workflow validates the role, researches companies currently hiring for it, and analyzes salary ranges and technical and non-technical skills required across multiple companies.\n\nFor a company, it validates the company name, researches the roles it hires for in India, and analyzes salary ranges and required skills for each role.\n\nThe workflow uses AI agents and web search to gather current market information, structures the findings into a consistent report, converts the results into a Markdown file, and automatically delivers the completed report through Telegram.",
+        "height": 496,
+        "width": 496
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -768,
+        -336
+      ],
+      "typeVersion": 1,
+      "id": "44b62e0f-b293-4ace-b3b9-0b1b2010dd99",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Route": {
+      "main": [
+        [
+          {
+            "node": "Validate Role",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validate Company",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Help Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Role": {
+      "main": [
+        [
+          {
+            "node": "Extract Valid Role Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FLASH-3.5-LITE": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Search For Salaries,Skills",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-OSS-120B1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Search For Salaries,Skills",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Search For Salaries,Skills",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Company": {
+      "main": [
+        [
+          {
+            "node": "Extract Valid Company Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-OSS-120B2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Search For Job Role,Salaries,Skills",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GPT-OSS-20B": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FLASH-3.5-LITE1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Search For Job Role,Salaries,Skills",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Search For Job Role,Salaries,Skills",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-OSS-20B1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format and Convert To Binary": {
+      "main": [
+        [
+          {
+            "node": "Send a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Search For Salaries,Skills",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily2": {
+      "ai_tool": [
+        [
+          {
+            "node": "Search For Job Role,Salaries,Skills",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search For Salaries,Skills": {
+      "main": [
+        [
+          {
+            "node": "Format and Convert To Binary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Agent Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Role Error": {
+      "main": [
+        [
+          {
+            "node": "Search",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Role Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Valid Role Output": {
+      "main": [
+        [
+          {
+            "node": "Route Role Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Valid Company Output": {
+      "main": [
+        [
+          {
+            "node": "Route Company Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Search For Salaries,Skills",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Company Error": {
+      "main": [
+        [
+          {
+            "node": "Search For Job Role,Salaries,Skills",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Company Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search For Job Role,Salaries,Skills": {
+      "main": [
+        [
+          {
+            "node": "Format and Convert to Binary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Agent Error Message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Company Error Message": {
+      "main": [
+        []
+      ]
+    },
+    "Format and Convert to Binary": {
+      "main": [
+        [
+          {
+            "node": "Send a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a1e33757-8e37-4d78-9cfd-a842bdabf6d4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1630a9b5a6440a44170b073990650ae9a4fd64d7853e1ab0afc6f4352ebda0d8"
+  },
+  "nodeGroups": [],
+  "id": "2oeAoVWZzuh5jWvg",
+  "tags": []
+}
